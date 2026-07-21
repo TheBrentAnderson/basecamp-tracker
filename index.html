@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0b">
+<title>Base Camp — Training Tracker</title>
+<style>
+  :root{
+    --bg:#0a0a0b; --surface:#141518; --surface2:#1b1d22; --surface3:#212429;
+    --border:#292c33; --border2:#34383f;
+    --text:#f3f4f6; --muted:#8b909a; --faint:#5b606a;
+    --accent:#b6ff3a; --accent-dim:#7ba626;
+    --run:#6ea8fe; --strength:#ffb454; --bike:#b18cff; --long:#b6ff3a;
+    --good:#4ade80; --warn:#fb923c;
+    --radius:16px; --radius-sm:11px;
+    font-synthesis:none;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{background:var(--bg);color:var(--text)}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.5;padding:0 0 90px;max-width:760px;margin:0 auto;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{padding:20px 16px 0}
+  /* header */
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+  .brand{display:flex;flex-direction:column}
+  .brand .kick{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);font-weight:700}
+  .brand h1{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.05}
+  .brand .sub{font-size:12.5px;color:var(--muted);margin-top:3px}
+  .ring{position:relative;width:76px;height:76px;flex:none}
+  .ring svg{transform:rotate(-90deg)}
+  .ring .pct{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .ring .pct b{font-size:19px;font-weight:800;letter-spacing:-.02em}
+  .ring .pct span{font-size:9px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+
+  /* stat row */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:16px 0}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 10px;text-align:center}
+  .stat b{display:block;font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1}
+  .stat .lbl{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-top:6px}
+  .stat.hot b{color:var(--accent)}
+
+  /* motivation banner */
+  .quote{background:linear-gradient(135deg,#16181c,#101114);border:1px solid var(--border);border-left:3px solid var(--accent);
+    border-radius:var(--radius-sm);padding:13px 15px;margin-bottom:16px;font-size:14px;color:#dfe2e7;font-style:italic}
+  .quote b{color:var(--accent);font-style:normal}
+
+  /* floor bar */
+  .floor{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius-sm);padding:11px 14px;margin-bottom:18px;font-size:12.5px;color:var(--muted)}
+  .floor .dot{width:9px;height:9px;border-radius:50%;background:var(--warn);flex:none;box-shadow:0 0 0 4px rgba(251,146,60,.13)}
+  .floor.met .dot{background:var(--good);box-shadow:0 0 0 4px rgba(74,222,128,.14)}
+  .floor.met{color:#cdd2da}
+  .floor b{color:var(--text)}
+
+  /* week nav */
+  .weeknav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .weeknav .nav{display:flex;align-items:center;gap:8px}
+  .arw{width:38px;height:38px;border-radius:11px;background:var(--surface);border:1px solid var(--border);color:var(--text);
+    font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.15s}
+  .arw:active{transform:scale(.94)}
+  .arw:disabled{opacity:.3;cursor:default}
+  .weektitle{text-align:center}
+  .weektitle b{font-size:16px;font-weight:800;letter-spacing:-.01em}
+  .weektitle .blk{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+  .today-btn{font-size:11px;font-weight:700;color:var(--accent);background:none;border:1px solid var(--accent-dim);
+    padding:5px 11px;border-radius:20px;cursor:pointer;letter-spacing:.03em}
+  .phasebar{height:6px;border-radius:6px;background:var(--surface2);overflow:hidden;margin-bottom:20px;display:flex}
+  .phasebar i{height:100%;display:block}
+
+  /* session card */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:11px;overflow:hidden;transition:.2s}
+  .card.done{border-color:rgba(182,255,58,.35);background:linear-gradient(180deg,rgba(182,255,58,.05),transparent 60%),var(--surface)}
+  .chead{display:flex;align-items:center;gap:13px;padding:14px 15px;cursor:pointer}
+  .tick{width:30px;height:30px;border-radius:50%;border:2px solid var(--border2);flex:none;display:flex;align-items:center;justify-content:center;
+    transition:.18s;background:var(--surface2)}
+  .tick svg{width:15px;height:15px;opacity:0;transform:scale(.5);transition:.18s}
+  .card.done .tick{background:var(--accent);border-color:var(--accent)}
+  .card.done .tick svg{opacity:1;transform:scale(1)}
+  .card.done .tick svg path{stroke:#0a0a0b}
+  .cmain{flex:1;min-width:0}
+  .cmain .row1{display:flex;align-items:center;gap:8px}
+  .cmain .day{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+  .tag{font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:20px}
+  .tag.core{background:rgba(182,255,58,.13);color:var(--accent)}
+  .tag.flex{background:var(--surface3);color:var(--muted)}
+  .cmain h3{font-size:15.5px;font-weight:700;letter-spacing:-.01em;margin:3px 0 1px}
+  .cmain .det{font-size:12.5px;color:var(--muted)}
+  .typedot{width:8px;height:8px;border-radius:50%;flex:none}
+  .chev{color:var(--faint);font-size:13px;transition:.2s;flex:none}
+  .card.open .chev{transform:rotate(180deg)}
+
+  /* log body */
+  .clog{max-height:0;overflow:hidden;transition:max-height .3s ease}
+  .card.open .clog{max-height:1400px}
+  .clog-in{padding:2px 15px 16px;border-top:1px solid var(--border)}
+  .fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field.full{grid-column:1/-1}
+  .field label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+  input,textarea,select{background:var(--surface2);border:1px solid var(--border);border-radius:9px;color:var(--text);
+    font-size:14px;padding:10px 11px;font-family:inherit;width:100%;outline:none;transition:.15s}
+  input:focus,textarea:focus,select:focus{border-color:var(--accent-dim);background:var(--surface3)}
+  textarea{resize:vertical;min-height:44px}
+  .feelrow{display:flex;gap:7px}
+  .feel{flex:1;text-align:center;padding:9px 4px;border-radius:9px;background:var(--surface2);border:1px solid var(--border);
+    font-size:12px;cursor:pointer;color:var(--muted);transition:.15s}
+  .feel.on{background:var(--surface3);border-color:var(--accent-dim);color:var(--accent);font-weight:700}
+  /* strength table */
+  .exhead{font-size:11px;color:var(--muted);margin:14px 0 8px;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+  .scheme{background:var(--surface2);border:1px dashed var(--border2);border-radius:9px;padding:9px 12px;font-size:12.5px;color:#cdd2da;margin-bottom:12px}
+  .scheme b{color:var(--strength)}
+  .ex{display:grid;grid-template-columns:1fr 66px 66px;gap:8px;align-items:center;margin-bottom:8px}
+  .ex .exn{font-size:13px;font-weight:600}
+  .ex .exn small{display:block;font-size:10.5px;color:var(--faint);font-weight:400}
+  .ex input{padding:8px 8px;font-size:13px;text-align:center}
+  .ex .cap{font-size:9px;color:var(--faint);text-align:center;text-transform:uppercase;letter-spacing:.05em}
+  .exlabels{display:grid;grid-template-columns:1fr 66px 66px;gap:8px;margin-bottom:4px}
+  .peloton{background:rgba(177,140,255,.08);border:1px solid rgba(177,140,255,.2);border-radius:9px;padding:10px 12px;font-size:12.5px;color:#d9ccff;margin-top:2px}
+  .peloton b{color:#c4a9ff}
+
+  /* badges */
+  .section-h{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:26px 2px 13px}
+  .badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:9px}
+  .badge{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:13px 9px;text-align:center;opacity:.4;transition:.25s;filter:grayscale(1)}
+  .badge.earned{opacity:1;filter:none;border-color:var(--border2);background:linear-gradient(180deg,var(--surface2),var(--surface))}
+  .badge .ico{font-size:24px;line-height:1}
+  .badge .bn{font-size:10.5px;font-weight:700;margin-top:6px;letter-spacing:-.01em}
+  .badge .bd{font-size:9px;color:var(--faint);margin-top:2px;line-height:1.3}
+  .badge.earned .bn{color:var(--accent)}
+
+  /* backup */
+  .tools{display:flex;gap:9px;margin:24px 0 8px}
+  .tbtn{flex:1;background:var(--surface);border:1px solid var(--border);color:var(--muted);border-radius:11px;padding:12px;
+    font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s;font-family:inherit}
+  .tbtn:active{transform:scale(.97)}
+  .tbtn:hover{border-color:var(--border2);color:var(--text)}
+  .rule{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:15px;margin-top:20px;font-size:13px;color:var(--muted)}
+  .rule b{color:var(--accent)}
+  .foot{text-align:center;font-size:11px;color:var(--faint);margin:22px 0 6px;line-height:1.7}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#0a0a0b;
+    font-weight:700;font-size:13px;padding:11px 20px;border-radius:30px;opacity:0;transition:.25s;pointer-events:none;z-index:50;box-shadow:0 8px 30px rgba(182,255,58,.25)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .firewrap{display:inline-flex;align-items:center;gap:3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div class="brand">
+      <span class="kick">Marathon · Hyrox base</span>
+      <h1>Base Camp</h1>
+      <span class="sub" id="phaseSub">12 week comeback block</span>
+    </div>
+    <div class="ring">
+      <svg width="76" height="76">
+        <circle cx="38" cy="38" r="33" fill="none" stroke="#212429" stroke-width="7"></circle>
+        <circle id="ringFill" cx="38" cy="38" r="33" fill="none" stroke="var(--accent)" stroke-width="7" stroke-linecap="round"
+          stroke-dasharray="207.3" stroke-dashoffset="207.3"></circle>
+      </svg>
+      <div class="pct"><b id="ringPct">0%</b><span>done</span></div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat hot"><b id="stStreak">0</b><div class="lbl">Wk streak</div></div>
+    <div class="stat"><b id="stDone">0</b><div class="lbl">Sessions</div></div>
+    <div class="stat"><b id="stWeeks">0</b><div class="lbl">This week</div></div>
+    <div class="stat"><b id="stLong">0</b><div class="lbl">Long km</div></div>
+  </div>
+
+  <div class="quote" id="quote"></div>
+
+  <div class="floor" id="floor">
+    <span class="dot"></span>
+    <span id="floorTxt"></span>
+  </div>
+
+  <div class="weeknav">
+    <div class="nav">
+      <button class="arw" id="prevW">‹</button>
+      <div class="weektitle"><b id="wLabel">Week 1</b><div class="blk" id="wBlock">Foundation</div></div>
+      <button class="arw" id="nextW">›</button>
+    </div>
+    <button class="today-btn" id="todayBtn">This week</button>
+  </div>
+  <div class="phasebar" id="phasebar"></div>
+
+  <div id="sessions"></div>
+
+  <div class="section-h">Milestones</div>
+  <div class="badges" id="badges"></div>
+
+  <div class="tools">
+    <button class="tbtn" id="exportBtn">⬇ Backup my data</button>
+    <button class="tbtn" id="importBtn">⬆ Restore backup</button>
+    <input type="file" id="importFile" accept="application/json" style="display:none">
+  </div>
+
+  <div class="rule">
+    <b>The one rule that beats every app:</b> never miss twice. One skipped session is a blip. Two in a row is how a plan dies. On a brutal week, protect the three <b>core</b> sessions (easy run, strength, long run) and let the rest go. Three beats zero every time.
+  </div>
+
+  <div class="foot" id="foot"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- PLAN DATA ---------- */
+const START = new Date(2026,6,27); // Mon Jul 27 2026
+const BLOCKS = [
+  {name:"Foundation", color:"#6ea8fe", weeks:[1,2,3,4]},
+  {name:"Build",      color:"#ffb454", weeks:[5,6,7,8]},
+  {name:"Sharpen",    color:"#b6ff3a", weeks:[9,10,11,12]}
+];
+const LONG    = [8,9,10,8, 11,12,13,10, 14,16,18,14];
+const EASY    = [5,6,6,5, 6,7,7,6, 7,8,8,6];
+const DELOAD  = [0,0,0,1, 0,0,0,1, 0,0,0,1];
+const QUALITY = [
+ "Easy pace + 4 x 20s strides","Easy pace + 6 x 20s strides","2 x 6 min tempo, 2 min jog between","3 x 5 min tempo, 90s jog",
+ "3 x 8 min tempo, 2 min jog","5 x 3 min at 5k effort, 90s jog","20 min continuous tempo","4 x 4 min at 5k effort, 2 min jog",
+ "25 min continuous tempo","6 x 800m at 5k effort, 2 min jog","2 x 15 min tempo, 3 min jog","20 min tempo, then reassess your shape"
+];
+const QDIST = [6,6,7,6, 7,7,8,6, 8,8,9,7];
+const BIKE = [
+ "Power Zone Endurance ride","Power Zone Endurance ride","Bike Bootcamp (bike + weights)","Power Zone recovery spin",
+ "Power Zone ride","Bike Bootcamp (bike + weights)","Power Zone Max ride","Power Zone recovery spin",
+ "Bike Bootcamp (bike + weights)","Power Zone Max ride","Climb ride","Power Zone ride"
+];
+const BIKEMIN = [30,45,45,30, 45,45,30,30, 45,30,45,45];
+const STRENGTH_EX = [
+  {n:"Goblet Squat", s:"DB / KB at chest"},
+  {n:"Romanian Deadlift", s:"DB / KB, slow hinge"},
+  {n:"DB Floor Press", s:"controlled"},
+  {n:"Bent-Over Row", s:"squeeze back"},
+  {n:"Walking Lunge", s:"reps per leg"},
+  {n:"Farmers Carry", s:"heavy, 40m"},
+  {n:"Kettlebell Swing", s:"snap hips"},
+  {n:"Plank", s:"hold, seconds"}
+];
+const STR_SCHEME = ["3 rounds · 12 reps","3 rounds · 12 reps","3 rounds · 12 reps","3 rounds · 10 reps (deload)",
+  "4 rounds · 10 reps","4 rounds · 10 reps","4 rounds · 10 reps","3 rounds · 10 reps (deload)",
+  "4 rounds · 8-10 reps + finisher","4 rounds · 8-10 reps + finisher","4 rounds · 8-10 reps + finisher","3 rounds · 10 reps (taper)"];
+
+const DAYS = [
+  {key:"mon", label:"Mon", type:"easy",     core:true,  color:"var(--run)"},
+  {key:"tue", label:"Tue", type:"strength", core:true,  color:"var(--strength)"},
+  {key:"wed", label:"Wed", type:"bike",     core:false, color:"var(--bike)"},
+  {key:"thu", label:"Thu", type:"quality",  core:false, color:"var(--run)"},
+  {key:"long",label:"Sat / Sun", type:"long", core:true, color:"var(--long)"}
+];
+
+function blockOf(w){ return w<=4?0 : w<=8?1 : 2; }
+function session(w,dayKey){
+  const i=w-1;
+  const dl = DELOAD[i] ? " · deload week, keep it light" : "";
+  switch(dayKey){
+    case "mon":  return {title:`Easy Run · ${EASY[i]} km`, det:`Zone 2, conversational. Nose-breathing easy${dl}`};
+    case "tue":  return {title:"Strength · full body", det:`${STR_SCHEME[i]} · dumbbells & kettlebells`};
+    case "wed":  return {title:`Peloton Bike · ${BIKEMIN[i]} min`, det:BIKE[i]};
+    case "thu":  return {title:`Quality Run · ~${QDIST[i]} km`, det:QUALITY[i]};
+    case "long": return {title:`Long Run · ${LONG[i]} km`, det:`Steady, easy effort. Fuel + hydrate${dl}`};
+  }
+}
+
+/* ---------- STATE ---------- */
+let state={logs:{}}, curWeek=1, memoryOnly=false;
+const KEY="basecamp_v1";
+function load(){
+  try{ const r=localStorage.getItem(KEY); if(r) state=JSON.parse(r); }
+  catch(e){ memoryOnly=true; }
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(state)); }
+  catch(e){ memoryOnly=true; }
+}
+function sk(w,d){ return `w${w}-${d}`; }
+function log(w,d){ return state.logs[sk(w,d)] || (state.logs[sk(w,d)]={done:false,f:{}}); }
+
+/* current week by date */
+function computeCurrentWeek(){
+  const now=new Date(); const ms=now - START;
+  if(ms<0) return 1;
+  const wk=Math.floor(ms/(7*864e5))+1;
+  return Math.max(1,Math.min(12,wk));
+}
+
+/* ---------- METRICS ---------- */
+function allDone(){ let n=0; for(let w=1;w<=12;w++) for(const d of DAYS) if(log(w,d.key).done) n++; return n; }
+function weekDone(w){ return DAYS.filter(d=>log(w,d.key).done).length; }
+function weekStreak(){
+  // consecutive weeks the floor was held (3+ core sessions), counting back from the current week.
+  const cw=computeCurrentWeek(); let s=0;
+  if(coreMet(cw)>=3) s++;              // current week counts once its floor is met
+  for(let w=cw-1;w>=1;w--){ if(coreMet(w)>=3) s++; else break; }
+  return s;
+}
+function solidWeeks(){ let n=0; for(let w=1;w<=12;w++) if(weekDone(w)>=3) n++; return n; }
+function longestLong(){
+  let m=0; for(let w=1;w<=12;w++){ const v=parseFloat((log(w,"long").f||{}).dist); if(!isNaN(v)) m=Math.max(m,v);} return m;
+}
+function coreMet(w){ return DAYS.filter(d=>d.core && log(w,d.key).done).length; }
+
+/* ---------- RENDER ---------- */
+const $=id=>document.getElementById(id);
+function renderHeader(){
+  const done=allDone(), pct=Math.round(done/60*100);
+  $("ringFill").style.strokeDashoffset = 207.3*(1-done/60);
+  $("ringPct").textContent = pct+"%";
+  const cs=weekStreak();
+  $("stStreak").innerHTML = cs>0 ? `<span class="firewrap">${cs}${cs>=2?" 🔥":""}</span>` : "0";
+  $("stDone").textContent = done;
+  $("stWeeks").textContent = weekDone(curWeek)+"/5";
+  $("stLong").textContent = longestLong()||0;
+}
+function renderFloor(){
+  const c=coreMet(curWeek), el=$("floor");
+  if(c>=3){ el.classList.add("met"); $("floorTxt").innerHTML=`<b>Floor held.</b> All three core sessions done this week. Everything else is bonus.`; }
+  else { el.classList.remove("met"); $("floorTxt").innerHTML=`Core sessions this week: <b>${c}/3</b>. Protect the easy run, strength, and long run no matter what.`; }
+}
+function renderWeekNav(){
+  $("wLabel").textContent="Week "+curWeek;
+  const b=BLOCKS[blockOf(curWeek)];
+  $("wBlock").textContent = b.name + (DELOAD[curWeek-1]?" · deload":"");
+  $("prevW").disabled = curWeek<=1; $("nextW").disabled = curWeek>=12;
+  // phase bar
+  let html=""; for(let w=1;w<=12;w++){ const col=BLOCKS[blockOf(w)].color; const on=w<=curWeek?1:.22;
+    const done=weekDone(w)>=3; html+=`<i style="flex:1;background:${col};opacity:${w===curWeek?1:on};margin:0 1px;border-radius:3px;${done?'box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)':''}"></i>`; }
+  $("phasebar").innerHTML=html;
+}
+function feelBtns(w,d,cur){
+  return ["Easy","Solid","Hard"].map(f=>`<div class="feel ${cur===f?'on':''}" data-feel="${f}" data-w="${w}" data-d="${d}">${f}</div>`).join("");
+}
+function runLog(w,d){
+  const f=log(w,d).f;
+  return `<div class="fields">
+    <div class="field"><label>Distance (km)</label><input type="number" inputmode="decimal" data-w="${w}" data-d="${d}" data-f="dist" value="${f.dist||''}" placeholder="0.0"></div>
+    <div class="field"><label>Time</label><input type="text" data-w="${w}" data-d="${d}" data-f="time" value="${f.time||''}" placeholder="mm:ss"></div>
+    <div class="field full"><label>How it felt</label><div class="feelrow">${feelBtns(w,d,f.feel)}</div></div>
+    <div class="field full"><label>Notes</label><textarea data-w="${w}" data-d="${d}" data-f="notes" placeholder="Pace, how the legs felt, anything worth remembering...">${f.notes||''}</textarea></div>
+  </div>`;
+}
+function bikeLog(w,d){
+  const f=log(w,d).f;
+  return `<div class="peloton">Pick a <b>${BIKE[w-1]}</b> around <b>${BIKEMIN[w-1]} min</b> in the Peloton app. Log your output below.</div>
+  <div class="fields" style="margin-top:12px">
+    <div class="field"><label>Output (kJ)</label><input type="number" inputmode="numeric" data-w="${w}" data-d="${d}" data-f="output" value="${f.output||''}" placeholder="—"></div>
+    <div class="field"><label>Class taken</label><input type="text" data-w="${w}" data-d="${d}" data-f="cls" value="${f.cls||''}" placeholder="instructor / title"></div>
+    <div class="field full"><label>Notes</label><textarea data-w="${w}" data-d="${d}" data-f="notes" placeholder="How the legs felt...">${f.notes||''}</textarea></div>
+  </div>`;
+}
+function strengthLog(w,d){
+  const f=log(w,d).f; f.ex=f.ex||{};
+  let rows=`<div class="scheme">Target: <b>${STR_SCHEME[w-1]}</b>. Rest 60-90s between rounds. Log your working weight and the reps you actually hit.</div>
+  <div class="exlabels"><span></span><div class="cap">Weight</div><div class="cap">Reps</div></div>`;
+  STRENGTH_EX.forEach((e,idx)=>{
+    const ex=f.ex[idx]||{};
+    rows+=`<div class="ex">
+      <div class="exn">${e.n}<small>${e.s}</small></div>
+      <input type="text" data-w="${w}" data-d="${d}" data-ex="${idx}" data-ef="wt" value="${ex.wt||''}" placeholder="—">
+      <input type="text" data-w="${w}" data-d="${d}" data-ex="${idx}" data-ef="rp" value="${ex.rp||''}" placeholder="—">
+    </div>`;
+  });
+  rows+=`<div class="field full" style="margin-top:6px"><label>Notes</label><textarea data-w="${w}" data-d="${d}" data-f="notes" placeholder="What felt strong, what to bump next week...">${f.notes||''}</textarea></div>`;
+  return rows;
+}
+function renderSessions(){
+  const el=$("sessions"); el.innerHTML="";
+  DAYS.forEach(d=>{
+    const s=session(curWeek,d.key); const l=log(curWeek,d.key);
+    const card=document.createElement("div");
+    card.className="card"+(l.done?" done":"");
+    let body = d.type==="strength"?strengthLog(curWeek,d.key) : d.type==="bike"?bikeLog(curWeek,d.key) : runLog(curWeek,d.key);
+    card.innerHTML=`
+      <div class="chead">
+        <div class="tick" data-tick="${d.key}"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 6" stroke="#0a0a0b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="cmain" data-open="${d.key}">
+          <div class="row1"><span class="typedot" style="background:${d.color}"></span><span class="day">${d.label}</span>
+            <span class="tag ${d.core?'core':'flex'}">${d.core?'Core':'Flex'}</span></div>
+          <h3>${s.title}</h3><div class="det">${s.det}</div>
+        </div>
+        <span class="chev" data-open="${d.key}">▼</span>
+      </div>
+      <div class="clog"><div class="clog-in">${body}</div></div>`;
+    el.appendChild(card);
+  });
+}
+const BADGES=[
+  {id:"first", ico:"🥾", n:"First Step", d:"1 session", test:()=>allDone()>=1},
+  {id:"floor1",ico:"🛡️", n:"Floor Holder", d:"3+ in a week", test:()=>{for(let w=1;w<=12;w++)if(weekDone(w)>=3)return true;return false;}},
+  {id:"week1", ico:"✅", n:"Full Week", d:"all 5 in a week", test:()=>{for(let w=1;w<=12;w++)if(weekDone(w)===5)return true;return false;}},
+  {id:"dd",    ico:"🏃", n:"Double Digits", d:"10km+ long run", test:()=>longestLong()>=10},
+  {id:"s25",   ico:"⚡", n:"25 Club", d:"25 sessions", test:()=>allDone()>=25},
+  {id:"b1",    ico:"🧱", n:"Foundation", d:"block 1 done", test:()=>[1,2,3,4].every(w=>weekDone(w)>=3)},
+  {id:"b2",    ico:"🔨", n:"Built", d:"block 2 done", test:()=>[5,6,7,8].every(w=>weekDone(w)>=3)},
+  {id:"half",  ico:"🎖️", n:"Half Back", d:"18km long run", test:()=>longestLong()>=18},
+  {id:"s50",   ico:"💎", n:"50 Club", d:"50 sessions", test:()=>allDone()>=50},
+  {id:"finish",ico:"🏆", n:"Base Built", d:"block 3 done", test:()=>[9,10,11,12].every(w=>weekDone(w)>=3)}
+];
+function renderBadges(){
+  $("badges").innerHTML=BADGES.map(b=>`<div class="badge ${b.test()?'earned':''}"><div class="ico">${b.ico}</div><div class="bn">${b.n}</div><div class="bd">${b.d}</div></div>`).join("");
+}
+const QUOTES=[
+  "Discipline is choosing between what you want now and what you want most.",
+  "You don't have to be extreme, just consistent.",
+  "The plan only works on the days you don't feel like it.",
+  "Slow miles build fast runners.",
+  "Show up. That's 90% of it.",
+  "Nobody ever regretted the workout they did.",
+  "The comeback is always stronger than the setback.",
+  "Small sessions, stacked daily, become an unrecognizable you.",
+  "Motivation gets you started. The system keeps you going.",
+  "Miss one if you must. Never miss two."
+];
+function renderQuote(){ const i=(new Date().getFullYear()*366 + Math.floor((new Date()-new Date(new Date().getFullYear(),0,0))/864e5))%QUOTES.length; $("quote").innerHTML=`"${QUOTES[i]}"`; }
+function renderFoot(){
+  $("foot").innerHTML = (memoryOnly?"⚠ Storage is blocked here so data won't save. Open this file in your own browser and it will remember everything.<br>":"") +
+    "Plan starts Mon Jul 27 2026 · 12 week base block · your data lives only on this device — back it up.";
+}
+function renderAll(){ renderHeader(); renderFloor(); renderWeekNav(); renderSessions(); renderBadges(); renderFoot(); }
+
+/* ---------- EVENTS ---------- */
+let toastT;
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),1600); }
+function celebrate(before){
+  const after=BADGES.filter(b=>b.test()).map(b=>b.id);
+  const fresh=after.filter(id=>!before.includes(id));
+  if(fresh.length){ const b=BADGES.find(x=>x.id===fresh[0]); toast(`${b.ico}  ${b.n} unlocked`); }
+}
+document.addEventListener("click",e=>{
+  const tick=e.target.closest("[data-tick]");
+  if(tick){
+    const d=tick.getAttribute("data-tick"); const l=log(curWeek,d);
+    const before=BADGES.filter(b=>b.test()).map(b=>b.id);
+    l.done=!l.done; save();
+    renderHeader(); renderFloor(); renderWeekNav(); renderBadges();
+    tick.closest(".card").classList.toggle("done",l.done);
+    if(l.done){ celebrate(before); if(!$("toast").classList.contains("show")) toast("Logged. Streak alive."); }
+    return;
+  }
+  const op=e.target.closest("[data-open]");
+  if(op){ op.closest(".card").classList.toggle("open"); return; }
+  const feel=e.target.closest("[data-feel]");
+  if(feel){ const w=+feel.dataset.w,d=feel.dataset.d; log(w,d).f.feel=feel.dataset.feel; save();
+    feel.parentElement.querySelectorAll(".feel").forEach(x=>x.classList.remove("on")); feel.classList.add("on"); return; }
+});
+document.addEventListener("input",e=>{
+  const t=e.target; if(t.dataset.f!==undefined && t.dataset.d){ log(+t.dataset.w,t.dataset.d).f[t.dataset.f]=t.value; save(); renderHeader(); }
+  if(t.dataset.ex!==undefined){ const f=log(+t.dataset.w,t.dataset.d).f; f.ex=f.ex||{}; f.ex[t.dataset.ex]=f.ex[t.dataset.ex]||{}; f.ex[t.dataset.ex][t.dataset.ef]=t.value; save(); }
+});
+$("prevW").onclick=()=>{ if(curWeek>1){curWeek--;renderAll();window.scrollTo({top:0,behavior:'smooth'});} };
+$("nextW").onclick=()=>{ if(curWeek<12){curWeek++;renderAll();window.scrollTo({top:0,behavior:'smooth'});} };
+$("todayBtn").onclick=()=>{ curWeek=computeCurrentWeek(); renderAll(); toast("Week "+curWeek); };
+$("exportBtn").onclick=()=>{
+  const blob=new Blob([JSON.stringify(state)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="basecamp-backup-"+new Date().toISOString().slice(0,10)+".json"; a.click(); toast("Backup saved");
+};
+$("importBtn").onclick=()=>$("importFile").click();
+$("importFile").onchange=e=>{
+  const f=e.target.files[0]; if(!f) return; const r=new FileReader();
+  r.onload=()=>{ try{ state=JSON.parse(r.result); save(); renderAll(); toast("Backup restored"); }catch(x){ toast("Bad file"); } };
+  r.readAsText(f);
+};
+
+/* ---------- INIT ---------- */
+load(); curWeek=computeCurrentWeek(); renderQuote(); renderAll();
+</script>
+</body>
+</html>
